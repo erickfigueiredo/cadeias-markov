@@ -1,6 +1,17 @@
+/*
+*   UNIVERSIDADE FEDERAL DE VIÇOSA
+*   
+*   Desenvolvido por Erick Figueiredo (@erickfigueiredo)
+*   Professor: Salles Vianna    Disc: Estrutura de Dados
+*   Data: 
+*/
+
 #include <iostream>
 #include <cstring>
-#include <fstream>
+
+#include <fstream> // Leitura de arquivos
+#include <algorithm> // utilização do sort
+
 #include "MyVecNewIterator.h"
 #include "MyMap.h"
 
@@ -10,39 +21,96 @@ using namespace std;
 bool isAlpha(const char c);
 bool isUpper(const char c);
 bool isLower(const char c);
-bool isNumeric(const char c); 
+bool isNumeric(const char c);
 bool isEspecialCase(const char c);
 
 string formatLine(const string &line);
-bool identSentences(MyVec<MyVec<string>> &text, string &lineFormated, bool needLine);
+bool identSentences(MyVec<MyVec<string>> &text, const string &lineFormated, bool needLine);
+void populateDictionary(Dictionary &dic, const MyVec<MyVec<string>> &text);
+
+
+struct Dictionary{
+    public:
+        MyMap<string, int> lv1;
+        MyMap<string, MyMap<string, int>> lv2;
+        MyMap<string, MyMap<string, MyMap<string, int>>> lv3;
+};
 
 //* Método main
 int main(int argc, char *argv[]) {
-    MyMap < MyMap < MyMap <string,int>, int>, int> dic;
     MyVec< MyVec <string>> text;
+    
+    Dictionary dic;
+
     string sentence;
     bool needLine = false;
 
-    // Popula MyVec
-    while(getline(cin, sentence)){
-        sentence = formatLine(sentence);
-        needLine = identSentences(text, sentence, needLine);
+    if (argc > 1) {
+
+        bool isTraining = true;
+
+        ifstream fileIn(argv[1]);
+        while (!fileIn.eof()){
+            getline(fileIn, sentence);
+            
+            if(sentence == "FINAL_TREINO"){
+                isTraining = false;
+                populateDictionary(dic, text);
+                
+                continue;
+            }
+            
+            if(isTraining) {
+                sentence = formatLine(sentence);
+
+                if (sentence.size())
+                    needLine = identSentences(text, sentence, needLine);
+
+            } else {
+                //AREA DOS COMANDOS
+            }
+        }
+
+        fileIn.close();
+    }else{
+        // Formata os inputs e identa o conteúdo em MyVec
+        while(getline(cin, sentence)){
+            if(sentence == "COMECO_TREINO")
+                continue;
+
+            if(sentence == "FINAL_TREINO")
+                break;
+
+            sentence = formatLine(sentence);
+
+            if (sentence.size())
+                needLine = identSentences(text, sentence, needLine);
+        }
+
+        //Preenchemos o map com os dados obtidos
+        populateDictionary(dic, text);
+
+        //Passa para a leitura dos comandos
+
     }
+    
+    return 0;
 }
+
 
 //! Desenvolvimento das funções
 
 // Funções auxiliares para reduzir o tamanho das expressões booleanas
 
-bool isAlpha(const char c){ return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')); }
+bool isAlpha(const char c) { return ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z')); }
 
-bool isUpper(const char c){ return (c >= 'A' && c <= 'Z'); }
+bool isUpper(const char c) { return (c >= 'A' and c <= 'Z'); }
 
-bool isLower(const char c){ return (c >= 'a' && c <= 'z'); }
+bool isLower(const char c) { return (c >= 'a' and c <= 'z'); }
 
-bool isNumeric(const char c){ return (c >= '0' && c <= '9'); }
+bool isNumeric(const char c) { return (c >= '0' and c <= '9'); }
 
-bool isEspecialCase(const char c) { return (c == 34 || c == 39 || c == 10 || c == 32); } // Caso aspas duplas, simples, newline ou espaço
+bool isEspecialCase(const char c) { return (c == 34 or c == 39 or c == 10 or c == 32); } // Caso aspas duplas, simples, newline ou espaço
 
 
 // Adequa a linha à formatação exigida no exercício
@@ -51,38 +119,33 @@ string formatLine(const string &line) {
     string formatedLine;
 
     for(int i = 0; i < line.size(); i++) {
-
-        if (isAlpha(line[i]) || line[i] == '-') { 
-            if(isLower(line[i]))    // Se for alfabético e minusculo, copia
-                formatedLine += line[i];
-            
-            else if(isUpper(line[i]))   // Se for alfabetico e maiúsculo, converte e copia
-                formatedLine += (line[i] + 32);
-
-            else if ((i > 0 && isAlpha(line[i - 1])) && (i < line.size() - 1 && isAlpha(line[i+1]))) // Se o hífen estiver entre letras do alfabeto, copia
+        if(isAlpha(line[i]) or line[i] == '-') {    // Caractere alfabético ou hífen
+            if(isLower(line[i]))    // Se for minúsculo, apenas copia
                 formatedLine += line[i];
 
-        }else if (i > 0 && isEspecialCase(line[i])) {   // Caso de caracteres especiais
+            else if(isUpper(line[i]))   // Se for maiúsculo, converte e copia
+                formatedLine += (line[i]+32);
 
-            if (formatedLine[formatedLine.size() - 1] != ',' && formatedLine[formatedLine.size() - 1] != '\n') // Se o caractere anterior for diferente de vírgula e new line, converte o atual para virgula
+            else if ((i > 0 and isAlpha(line[i - 1])) and (i < line.size() - 1 and isAlpha(line[i + 1]))) // Se o hífen for precedido e sucedido por letras, copia
+                formatedLine += line[i];
+
+        } else if (isEspecialCase(line[i]) and formatedLine.size() != 0 and (i < line.size() - 1)) {    // Se for um caractere do caso especial não sendo o último, na condição de que já haja letra na string de copia
+
+            if (!isEspecialCase(line[i + 1]) and line[i + 1] != '\n' and formatedLine[formatedLine.size()-1] != '\n')   // Se o próximo caractere não for especial e o atual não esteja entre newlines, copia vírgula
                 formatedLine += ',';
-
-            continue;   // Se o anterior já for newline ou vírgula, passa para a próxima iteração
-        
-        }else if (i > 0 && formatedLine[formatedLine.size() - 1] != '\n') { // Caso o último caractere seja diferente de newline e esteja a frente do primeio caractere
             
-            if (formatedLine[formatedLine.size() - 1] == ',') // Se o anterior for vírgula, converte para newline
-                formatedLine[formatedLine.size() - 1] = '\n';
-
-            else // Senão, adiciona newline
-                formatedLine += '\n';
+            continue;
+        }
+        else if (formatedLine.size() != 0 and formatedLine[formatedLine.size() - 1] != '\n') {  // Se a string resultado não estiver vazia e o caractere anterior for diferente de newline copia
+            formatedLine += '\n';  
         }
     }
 
     return formatedLine;
 }
 
-// Ajusta colocando apenas uma sentença por linha no vector
+
+// Passagem da linha formatada para MyVec
 
 bool identSentences(MyVec<MyVec<string>> &text, string &lineFormated, bool needLine) {
     int index = 0;
@@ -104,18 +167,20 @@ bool identSentences(MyVec<MyVec<string>> &text, string &lineFormated, bool needL
             needLine = false;
         }
 
-        if(lineFormated[i] == '\n'){    // Indica nova sentença, aloca a ultima palavra formada na linha atual e ativa a flag para nova alocação
+        if(lineFormated[i] == '\n' or lineFormated[i] == ','){    // aloca a ultima palavra formada na linha atual
             text[index].push_back(word);
             word = "!";
-            needLine = true;
 
-        }else if(lineFormated[i] == ','){   // Indica fim da palavra atual, aloca word na linha e reseta seu valor para receber nova palavra
-            text[index].push_back(word); 
-            word = "!";
+            if (lineFormated[i] == '\n')    // Ativa a flag de necessidade de nova linha
+                needLine = true;
 
         }else if(i == lineFormated.size()-1){   // Indica que a frase inserida até o momento acabou, porém a senetença não, insere a palavra na linha
-            word += lineFormated[i];
+            if(word == "!")
+                word = lineFormated[i];
+            else
+                word += lineFormated[i];
             text[index].push_back(word);
+            
         }else{
             if(word == "!") // Se word está resetado, começa a receber as letras da nova palavra
                 word = lineFormated[i];
@@ -124,14 +189,22 @@ bool identSentences(MyVec<MyVec<string>> &text, string &lineFormated, bool needL
         }
     }
 
-    
-    for(int i = 0; i < text.size(); i++){
-        for(int j = 0; j < text[i].size(); j++)
-            cout << text[i][j] << ' ';
-    
-        cout << '\n';
-    }
-    
     return needLine;    // Indica se a nova frase precisará ser escrita em uma nova linha ou não
 }
 
+
+// Popular dicionário com os dados de MyVec
+
+void populateDictionary(Dictionary &dic, const MyVec<MyVec<string>> &text) {
+    
+    //Nivel 1 - Frequencia da palavra no texto
+    //Nivel 2 - Frequencia de duas palavras seguidas no texto
+    //Nivel 3 - Frequencia de três palavras seguidas no texto
+
+    for(int i = 0; i < text.size(); i++){
+        for(int j = 0; j < text[i].size(); j++){
+            
+
+        }
+    }
+}
