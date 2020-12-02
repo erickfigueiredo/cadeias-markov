@@ -6,141 +6,191 @@
 *   Data: 
 */
 
-#include <iostream> 
-#include <cstring>
-#include <fstream>  // Leitura de arquivos
-#include <utility>  // Utilização de Pair
+#include <iostream>
+#include <string>
+
+#include <fstream>   // Leitura de arquivos
+#include <algorithm> // utilização do sort
+
 #include "MyVecNewIterator.h"
 #include "MyMap.h"
 
 using namespace std;
 
+struct Dictionary
+{
+public:
+    MyMap<string, int> lv1;
+    MyMap<string, MyMap<string, int>> lv2;
+    MyMap<string, MyMap<string, MyMap<string, int>>> lv3;
+};
+
 //* Interfaces
 bool isAlpha(const char c);
 bool isUpper(const char c);
 bool isLower(const char c);
-bool isNumeric(const char c); 
+bool isNumeric(const char c);
 bool isEspecialCase(const char c);
 
-string formatLine(const string &line);
-bool identSentences(MyVec<MyVec<string>> &text, string &lineFormated, bool needLine);
+bool sortDescByFreq(const pair<string, int> &p1, const pair<string, int> &p2);
+
+string formatLine(const string &);
+bool identSentences(MyVec<MyVec<string>> &, const string &, bool);
+void populateDictionary(Dictionary &, const MyVec<MyVec<string>> &);
+MyVec<string> formatQuery(const string &);
+void search(const MyVec<string> &, Dictionary &);
+void generate(const MyVec<string> &, Dictionary &);
 
 //* Método main
-int main(int argc, char *argv[]) {
-    MyVec< MyVec <string>> text;
+int main(int argc, char *argv[])
+{
+    MyVec<MyVec<string>> text;
+    MyVec<string> query;
 
+    Dictionary dic;
 
     string sentence;
-
     bool needLine = false;
 
-    if (argc > 1) {
+    if (argc > 1)
+    {
         ifstream fileIn(argv[1]);
-        // Falta trabalhar nessa parte
-        fileIn.close();
 
-    }else{
-        // Formata os inputs e identa o conteúdo em MyVec
-        while(getline(cin, sentence)){
-            if(sentence == "COMECO_TREINO")
-                continue;
-
-            if(sentence == "FINAL_TREINO")
+        while (!fileIn.eof())
+        {
+            if (sentence == "FINAL_TREINO")
                 break;
 
             sentence = formatLine(sentence);
 
-            // Se após a formatação não houver nenhuma letra na sentence, passa para a próx iteração
-            if(sentence == "" || sentence == "," || sentence == "\n")
-                continue;
-            cout << sentence << endl;
-
-            needLine = identSentences(text, sentence, needLine); 
+            if (sentence.size())
+                needLine = identSentences(text, sentence, needLine);
         }
 
-        //Preenche o MyMap
-        
-        for (int i = 0; i < text.size(); i++)
+        fileIn.close();
+
+        //Preenchemos o map com os dados obtidos
+        populateDictionary(dic, text);
+
+        //Passa para a leitura dos comandos
+        while (getline(cin, sentence))
         {
-            for (int j = 0; j < text[i].size(); j++)
-                cout << text[i][j] << ' ';
+            query = formatQuery(sentence);
 
-            cout << '\n';
+            if (query[0] == "consulta")
+                search(query, dic);
+
+            else
+                generate(query, dic);
         }
-        
-        //Obedece aos comandos
     }
-    
+    else
+    {
+        // Formata os inputs e identa o conteúdo em MyVec
+        while (getline(cin, sentence))
+        {
+            if (sentence == "COMECO_TREINO")
+                continue;
+
+            if (sentence == "FINAL_TREINO")
+                break;
+
+            sentence = formatLine(sentence);
+
+            if (sentence.size())
+                needLine = identSentences(text, sentence, needLine);
+        }
+
+        //Preenchemos o map com os dados obtidos
+        populateDictionary(dic, text);
+
+        //Passa para a leitura dos comandos
+        while (getline(cin, sentence))
+        {
+            query = formatQuery(sentence);
+
+            if (query[0] == "consulta")
+                search(query, dic);
+
+            else
+                generate(query, dic);
+        }
+    }
+
     return 0;
 }
+//* FIM METODO MAIN
 
 //! Desenvolvimento das funções
 
 // Funções auxiliares para reduzir o tamanho das expressões booleanas
 
-bool isAlpha(const char c){ return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')); }
+bool isAlpha(const char c) { return ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z')); }
 
-bool isUpper(const char c){ return (c >= 'A' && c <= 'Z'); }
+bool isUpper(const char c) { return (c >= 'A' and c <= 'Z'); }
 
-bool isLower(const char c){ return (c >= 'a' && c <= 'z'); }
+bool isLower(const char c) { return (c >= 'a' and c <= 'z'); }
 
-bool isNumeric(const char c){ return (c >= '0' && c <= '9'); }
+bool isNumeric(const char c) { return (c >= '0' and c <= '9'); }
 
-bool isEspecialCase(const char c) { return (c == 34 || c == 39 || c == 10 || c == 32); } // Caso aspas duplas, simples, newline ou espaço
-
+bool isEspecialCase(const char c) { return (c == 34 or c == 39 or c == 10 or c == 32); } // Caso aspas duplas, simples, newline ou espaço
 
 // Adequa a linha à formatação exigida no exercício
 
-string formatLine(const string &line) {
+string formatLine(const string &line)
+{
     string formatedLine;
 
-    for(int i = 0; i < line.size(); i++) {
-
-        if (isAlpha(line[i]) || line[i] == '-') { 
-            if(isLower(line[i]))    // Se for alfabético e minusculo, copia
+    for (int i = 0; i < line.size(); i++)
+    {
+        if (isAlpha(line[i]) or line[i] == '-')
+        {                         // Caractere alfabético ou hífen
+            if (isLower(line[i])) // Se for minúsculo, apenas copia
                 formatedLine += line[i];
-            
-            else if(isUpper(line[i]))   // Se for alfabetico e maiúsculo, converte e copia
+
+            else if (isUpper(line[i])) // Se for maiúsculo, converte e copia
                 formatedLine += (line[i] + 32);
 
-            else if ((i > 0 && isAlpha(line[i - 1])) && (i < line.size() - 1 && isAlpha(line[i+1]))) // Se o hífen estiver entre letras do alfabeto, copia
+            else if ((i > 0 and isAlpha(line[i - 1])) and (i < line.size() - 1 and isAlpha(line[i + 1]))) // Se o hífen for precedido e sucedido por letras, copia
                 formatedLine += line[i];
+        }
+        else if (isEspecialCase(line[i]) and formatedLine.size() != 0 and (i < line.size() - 1))
+        { // Se for um caractere do caso especial não sendo o último, na condição de que já haja letra na string de copia
 
-        }else if (i > 0 && isEspecialCase(line[i])) {   // Caso de caracteres especiais, passa a verificar depois do primeiro caractere
-
-            if (formatedLine.size() != 0 && i < line.size() - 1 && formatedLine[formatedLine.size() - 1] != ',' && formatedLine[formatedLine.size() - 1] != '\n') // Se o caractere anterior for diferente de vírgula e new line, converte o atual para virgula
+            if (!isEspecialCase(line[i + 1]) and line[i + 1] != '\n' and formatedLine[formatedLine.size() - 1] != '\n') // Se o próximo caractere não for especial e o atual não esteja entre newlines, copia vírgula
                 formatedLine += ',';
 
-            continue;   // Se o anterior já for newline ou vírgula, passa para a próxima iteração
-        
-        }else if (i > 0 && formatedLine.size() != 0 && formatedLine[formatedLine.size() - 1] != '\n') { // Caso a string formatada não esteja vazia, o último caractere seja diferente de newline e esteja a frente do primeio caractere
-
-            if (formatedLine[formatedLine.size() - 1] == ',') // Se o anterior for vírgula, converte para newline
-                formatedLine[formatedLine.size() - 1] = '\n';
-
-            else // Senão, adiciona newline
-                formatedLine += '\n';
+            continue;
+        }
+        else if (formatedLine.size() != 0 and formatedLine[formatedLine.size() - 1] != '\n')
+        { // Se a string resultado não estiver vazia e o caractere anterior for diferente de newline copia
+            formatedLine += '\n';
         }
     }
 
     return formatedLine;
 }
 
-// Ajusta colocando apenas uma sentença por linha no vector
+// Passagem da linha formatada para MyVec
 
-bool identSentences(MyVec<MyVec<string>> &text, string &lineFormated, bool needLine) {
+bool identSentences(MyVec<MyVec<string>> &text, const string &lineFormated, bool needLine)
+{
     int index = 0;
 
-    if(!text.size()){   // Se MyVector está vazio, adiciona o primeiro objeto newLine
-        MyVec <string> newLine;
+    if (!text.size())
+    { // Se MyVector está vazio, adiciona o primeiro objeto newLine
+        MyVec<string> newLine;
         text.push_back(newLine);
-    }else
-        index = text.size() - 1;    // O índice é ajustado para a última linha alocada até o momento em text
-    
+    }
+    else
+        index = text.size() - 1; // O índice é ajustado para a última linha alocada até o momento em text
+
     string word;
 
-    for(int i = 0; i < lineFormated.size(); i++){
-        if(needLine){   // Se precisa de uma nova linha, aloca em text e incrementa o indice
+    for (int i = 0; i < lineFormated.size(); i++)
+    {
+        if (needLine)
+        { // Se precisa de uma nova linha, aloca em text e incrementa o indice
             MyVec<string> newLine;
             text.push_back(newLine);
 
@@ -148,30 +198,201 @@ bool identSentences(MyVec<MyVec<string>> &text, string &lineFormated, bool needL
             needLine = false;
         }
 
-        if(lineFormated[i] == '\n'){    // Indica nova sentença, aloca a ultima palavra formada na linha atual e ativa a flag para nova alocação
+        if (lineFormated[i] == '\n' or lineFormated[i] == ',')
+        { // aloca a ultima palavra formada na linha atual
             text[index].push_back(word);
             word = "!";
-            needLine = true;
 
-        }else if(lineFormated[i] == ','){   // Indica fim da palavra atual, aloca word na linha e reseta seu valor para receber nova palavra
-            text[index].push_back(word); 
-            word = "!";
-
-        }else if(i == lineFormated.size()-1){   // Indica que a frase inserida até o momento acabou, porém a senetença não, insere a palavra na linha
-            if(word == "!")
+            if (lineFormated[i] == '\n') // Ativa a flag de necessidade de nova linha
+                needLine = true;
+        }
+        else if (i == lineFormated.size() - 1)
+        { // Indica que a frase inserida até o momento acabou, porém a senetença não, insere a palavra na linha
+            if (word == "!")
                 word = lineFormated[i];
             else
                 word += lineFormated[i];
             text[index].push_back(word);
-            
-        }else{
-            if(word == "!") // Se word está resetado, começa a receber as letras da nova palavra
+        }
+        else
+        {
+            if (word == "!") // Se word está resetado, começa a receber as letras da nova palavra
                 word = lineFormated[i];
             else
-                word += lineFormated[i];    
+                word += lineFormated[i];
         }
     }
 
-    return needLine;    // Indica se a nova frase precisará ser escrita em uma nova linha ou não
+    return needLine; // Indica se a nova frase precisará ser escrita em uma nova linha ou não
 }
 
+// Popular dicionário com os dados de MyVec
+
+void populateDictionary(Dictionary &dic, const MyVec<MyVec<string>> &text)
+{
+
+    //Nivel 1 - Frequencia da palavra no texto
+    //Nivel 2 - Frequencia de duas palavras seguidas no texto
+    //Nivel 3 - Frequencia de três palavras seguidas no texto
+
+    for (int i = 0; i < text.size(); i++)
+    { // Percorre todas as linhas e colunas de text
+        for (int j = 0; j < text[i].size(); j++)
+        {
+
+            dic.lv1[text[i][j]]++; // Caso a chave se repita o valor é incrementado
+
+            if (j + 1 < text[i].size()) // Se existir uma palavra à frente cria uma relação entre essa e a anterior, incrementa a frequência
+                dic.lv2[text[i][j]][text[i][j + 1]]++;
+
+            if (j + 2 < text.size()) // Se existir uma palavra à frente cria uma relação entre essa e "frase" já formada, incrementa a frequência
+                dic.lv3[text[i][j]][text[i][j + 1]][text[i][j + 2]]++;
+        }
+    }
+}
+
+// Formata comandos (mesmo princípio da func. identSentences)
+
+MyVec<string> formatQuery(const string &sentence)
+{
+    MyVec<string> query;
+    string aux;
+
+    for (int i = 0; i < sentence.size(); i++)
+    {
+        if (sentence[i] == ' ' || i == sentence.size() - 1)
+        {
+            if (isAlpha(sentence[i]))
+                aux += sentence[i];
+
+            query.push_back(aux);
+            aux = "!";
+        }
+        else
+        {
+            if (aux == "!")
+                aux = sentence[i];
+            else
+                aux += sentence[i];
+        }
+    }
+
+    return query;
+}
+
+bool sortDescByFreq(const pair<string, int> &p1, const pair<string, int> &p2)
+{
+    if (p1.second == p1.second)     // Se tiver a mesma frequencia
+        return p1.first < p2.first; // Verifique lexograficamente
+
+    return p1.second > p1.second; // Senão retorna true se p1 tiver mais frequência
+}
+
+// Consulta
+
+void search(const MyVec<string> &query, Dictionary &dic)
+{
+    int rows = stoi(query[1]); // Converte o número de linhas desejadas para um valor inteiro
+
+    if (rows > 0)
+    { // Se o numero de linhas buscadas for maior que 0
+
+        int nParams = query.size() - 2; //Numero de palavras passadas
+
+        switch (nParams)
+        {
+        case 1: // Caso seja passada uma palavra
+            if (dic.lv1[query[2]])
+            { // Se tiver frequência exibe
+                cout << query[2] << " (" << dic.lv1[query[2]] << ")\n";
+
+                rows--;
+
+                if (rows && dic.lv2[query[2]].size())
+                {
+                    MyMap<string, int>::iterator it2 = dic.lv2[query[2]].begin();
+
+                    MyVec<pair<string, int>> aux;
+
+                    while (it2 != NULL)
+                    {
+                        aux.push_back((*it2));
+                        it2++;
+                    }
+
+                    sort(aux.begin(), aux.end(), sortDescByFreq);
+
+                    for (int i = 0; i < aux.size() && rows; i++, rows--)
+                        cout << query[2] << aux[i].first << " (" << aux[i].second << ")\n";
+                }
+
+                if (rows && dic.lv3[query[2]].size())
+                {
+                    MyMap<string, int>::iterator it2 = dic.lv2[query[2]].begin();
+                    MyMap<string, int>::iterator it3 = dic.lv2[query[2]].begin();
+
+                    MyVec<pair<string, int>> aux;
+                    pair<string, int> bind;
+
+                    while (it2 != NULL)
+                    {
+                        it3 = dic.lv3[query[2]][(*it2).first].begin();
+                        while (it3 != NULL)
+                        {
+                            bind.first = (*it2).first + " " + (*it3).first;
+                            bind.second = (*it3).second;
+
+                            aux.push_back(bind);
+
+                            it3++;
+                        }
+                        it2++;
+                    }
+
+                    sort(aux.begin(), aux.end(), sortDescByFreq);
+
+                    for (int i = 0; i < aux.size() and rows; i++, rows--)
+                        cout << query[2] << aux[i].first << " (" << aux[i].second << ")\n";
+                }
+            }
+            break;
+
+        case 2: // Caso seja passada duas palavras
+            if (dic.lv2[query[2]][query[3]])
+            { // Se tiver frequência exibe
+                cout << query[2] << query[3] << " (" << dic.lv2[query[2]][query[3]] << ")\n";
+
+                rows--;
+
+                if (rows && dic.lv3[query[2]][query[3]].size())
+                {
+                    MyMap<string, int>::iterator it3 = dic.lv3[query[2]][query[3]].begin();
+
+                    MyVec<pair<string, int>> aux;
+
+                    while (it3 != NULL)
+                    {
+                        aux.push_back((*it3));
+                        it3++;
+                    }
+
+                    sort(aux.begin(), aux.end(), sortDescByFreq);
+
+                    for (int i = 0; i < aux.size() and rows; i++, rows--)
+                        cout << query[2] << query[3] << aux[i].first << " (" << aux[i].second << ")\n";
+                }
+            }
+            break;
+        case 3:                                        // Caso seja passada três palavras
+            if (dic.lv3[query[2]][query[3]][query[4]]) // Se tiver frequência exibe
+                cout << query[2] << query[3] << query[4] << " (" << dic.lv3[query[2]][query[3]][query[4]] << ")\n";
+            break;
+        }
+    }
+}
+
+// Gera
+
+void generate(const MyVec<string> &query, Dictionary &dic)
+{
+}
