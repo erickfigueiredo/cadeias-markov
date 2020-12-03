@@ -10,7 +10,7 @@
 #include <string>
 
 #include <fstream>   // Leitura de arquivos
-#include <algorithm> // utilização do sort
+#include <algorithm> // utilização de pair e sort
 
 #include "MyVecNewIterator.h"
 #include "MyMap.h"
@@ -32,14 +32,15 @@ bool isLower(const char c);
 bool isNumeric(const char c);
 bool isEspecialCase(const char c);
 
-bool sortDescByFreq(const pair<string, int> &p1, const pair<string, int> &p2);
+bool sortDescByFreq(const pair<string, int> &, const pair<string, int> &);
+void searchInLevel(MyMap <string, int>:: iterator, MyVec<string> &);
 
 string formatLine(const string &);
 bool identSentences(MyVec<MyVec<string>> &, const string &, bool);
 void populateDictionary(Dictionary &, const MyVec<MyVec<string>> &);
 MyVec<string> formatQuery(const string &);
 void search(const MyVec<string> &, Dictionary &);
-void generate(const MyVec<string> &, Dictionary &);
+void generate(MyVec<string> &, Dictionary &);
 
 
 //* Método main
@@ -53,46 +54,37 @@ int main(int argc, char *argv[])
     string sentence;
     bool needLine = false;
 
-    if (argc > 1)
-    {
+    if (argc > 1) {
         ifstream fileIn(argv[1]);
 
-        while (!fileIn.eof())
-        {
-            if (sentence == "FINAL_TREINO")
+        while (!fileIn.eof()) { // Enquanto não atingir o fim do arquivo
+            if (sentence == "FINAL_TREINO") // Ou chegar ao comando FINAL_TREINO
                 break;
 
-            sentence = formatLine(sentence);
+            sentence = formatLine(sentence);    // Formata a linha deixando apenas palavras separadas por virgulas e newlines
 
             if (sentence.size())
-                needLine = identSentences(text, sentence, needLine);
+                needLine = identSentences(text, sentence, needLine);    // Coloca cada sentença em uma linha de text e informa se a próx. sentence precisa começar em outra linha
         }
 
-        fileIn.close();
+        fileIn.close(); // Fecha o arquivo
 
-        //Preenchemos o map com os dados obtidos
-        /*
-        populateDictionary(dic, text);
+        populateDictionary(dic, text);  // Adiciona as palavras do texto no dicionario
 
         //Passa para a leitura dos comandos
-        while (getline(cin, sentence))
-        {
-            query = formatQuery(sentence);
+        while (getline(cin, sentence)) {
+            query = formatQuery(sentence);  // Formata o comando de input
 
             if (query[0] == "consulta")
-                search(query, dic);
+                search(query, dic); // Faz a busca e exibe o resultado
 
             else
-                generate(query, dic);
+                generate(query, dic); // Gera o a frase e exibe o resultado
         }
-        */
-    }
-    else
-    {
+    } else {
         // Formata os inputs e identa o conteúdo em MyVec
-        while (getline(cin, sentence))
-        {
-            if (sentence == "COMECO_TREINO")
+        while (getline(cin, sentence)) {
+            if (sentence == "COMECO_TREINO") // Esse input será apenas ignorado
                 continue;
 
             if (sentence == "FINAL_TREINO")
@@ -111,7 +103,7 @@ int main(int argc, char *argv[])
         while (getline(cin, sentence)) {
             query = formatQuery(sentence);
 
-            if (query[0] == "consulta")
+            if (query[0] == "consultar")
                 search(query, dic);
             else
                 generate(query, dic);
@@ -259,12 +251,11 @@ MyVec<string> formatQuery(const string &sentence) {
 
 
 // Função auxiliar de sort: Ordenar pela maior frequencia, seguido da menor posição Lexograficamente
-bool sortDescByFreq(const pair<string, int> &p1, const pair<string, int> &p2)
-{
-    if (p1.second == p1.second)     // Se tiver a mesma frequencia
-        return p1.first < p2.first; // Verifique lexograficamente
+bool sortDescByFreq(const pair<string, int> &p1, const pair<string, int> &p2) {
+    if (p1.second == p2.second)     // Se tiver a mesma frequencia
+        return p1.first < p2.first; // Verifique lexograficamente o menor
 
-    return p1.second > p1.second; // Senão retorna true se p1 tiver mais frequência
+    return p1.second > p2.second; // verifique numericamente o maior
 }
 
 
@@ -282,54 +273,27 @@ void search(const MyVec<string> &query, Dictionary &dic)
             if (dic.lv1[query[2]]) { // Se tiver frequência exibe
                 cout << query[2] << " (" << dic.lv1[query[2]] << ")\n";
 
-                rows--;
+                rows--; // Decrementa as linhas que poderiam ser exibidas
 
-                if (rows && dic.lv2[query[2]].size()) {
+                if (rows && dic.lv2[query[2]].size()) { // Se ainda houver demanada de linhas a serem exibidas e existir uma sequencia no nível 2
                     MyMap<string, int>::iterator it2 = dic.lv2[query[2]].begin();
 
                     MyVec<pair<string, int>> aux;
 
                     while (it2 != NULL) {
-                        aux.push_back((*it2));
+                        aux.push_back((*it2));  // Adiciona os pares no nível 2 que se relacionam com query[2]
                         it2++;
                     }
 
-                    sort(aux.begin(), aux.end(), sortDescByFreq);
+                    sort(aux.begin(), aux.end(), sortDescByFreq);   // Ordena os pares adicionados
 
-                    for (int i = 0; i < aux.size() && rows; i++, rows--)
-                        cout << query[2] << " " << aux[i].first << " (" << aux[i].second << ")\n";
-                }
-
-                if (rows && dic.lv3[query[2]].size()) {
-
-                    MyMap<string, int>::iterator it2 = dic.lv2[query[2]].begin();
-                    MyMap<string, int>::iterator it3 = dic.lv2[query[2]].begin();
-
-                    MyVec<pair<string, int>> aux;
-                    pair<string, int> bind;
-
-                    while (it2 != NULL) {
-                        it3 = dic.lv3[query[2]][(*it2).first].begin();
-                        while (it3 != NULL) {
-                            bind.first = (*it2).first + " " + (*it3).first;
-                            bind.second = (*it3).second;
-
-                            aux.push_back(bind);
-
-                            it3++;
-                        }
-                        it2++;
-                    }
-
-                    sort(aux.begin(), aux.end(), sortDescByFreq);
-
-                    for (int i = 0; i < aux.size() and rows; i++, rows--)
+                    for (int i = 0; i < aux.size() && rows; i++, rows--)    // Exibe a combinação seguida da frequência
                         cout << query[2] << " " << aux[i].first << " (" << aux[i].second << ")\n";
                 }
             }
             break;
 
-        case 2: // Caso seja passada duas palavras
+        case 2: // Caso seja passada duas palavras (mesmo princípio do caso 1)
             if (dic.lv2[query[2]][query[3]]) { // Se tiver frequência exibe
                 cout << query[2] << " " << query[3] << " (" << dic.lv2[query[2]][query[3]] << ")\n";
 
@@ -354,15 +318,84 @@ void search(const MyVec<string> &query, Dictionary &dic)
             break;
         case 3: // Caso seja passada três palavras
             if (dic.lv3[query[2]][query[3]][query[4]]) // Se tiver frequência exibe
-                cout << query[2] << query[3] << query[4] << " (" << dic.lv3[query[2]][query[3]][query[4]] << ")\n";
+                cout << query[2] << " " << query[3] << " " << query[4] << " (" << dic.lv3[query[2]][query[3]][query[4]] << ")\n";
             break;
         }
     }
 }
 
 
-// Comando: Gera
-void generate(const MyVec<string> &query, Dictionary &dic) {
-    
+void searchInLevel(MyMap <string, int>:: iterator it, MyVec<string> &query) {
+    pair<string, int> mostFreq; // Auxiliar que guarda a palavra mais frequente
 
+    mostFreq.first = (*it).first;
+    mostFreq.second = (*it).second;
+
+    while (it != NULL) {
+        if(mostFreq.second < (*it).second){ // Se for mais frequente substitui
+            mostFreq.first = (*it).first;
+            mostFreq.second = (*it).second;
+        } else if (mostFreq.second == (*it).second) // Se for igual pega a menor lexograficamente
+            if(mostFreq.first > (*it).first) 
+                mostFreq.first = (*it).first;
+        
+    it++;   // Incrementa o iterador
+    }
+
+    query.push_back(mostFreq.first); // Adiciona a palavra encontrada
+}
+
+// Comando: Gera
+void generate(MyVec<string> &query, Dictionary &dic) {
+    int newWords = stoi(query[1]); // Palavras a serem adicionadas
+    int numWords = query.size()-3; // Número de palavras existentes
+    string mode = query[2]; // Recebe o modo
+
+    if (mode == "padrao") {
+        while(newWords){    // enquanto precisar de palavras
+            MyMap <string, int>:: iterator it = dic.lv1.begin();
+            switch (numWords) {
+                case 0: // Caso tenha sido passado 0 palavras iniciais
+                    if (dic.lv1.size()) {
+                        searchInLevel(it, query);   // Busca e adiciona a melhor palavra para o contexto
+                        numWords++; // Incrementa o número de palavras adicionadas
+                    }
+                    break;
+                
+                case 1: // Caso tenha sido passado 1 palavra inicial
+                    if (dic.lv2[query[3]].size()) {
+                        it = dic.lv2[query[3]].begin();
+                        searchInLevel(it, query);
+                        numWords++;
+                    } else if(dic.lv1.size()) {
+                        searchInLevel(it, query);
+                        numWords++;
+                    }
+                    break;
+
+                default: // Caso tenha sido passado +1 palavras iniciais
+                    
+                    if (dic.lv3[query[query.size()-2]][query[query.size()-1]].size()) { // Se tiver palavras alocadas para a combinação no nível 3
+                        it = dic.lv3[query[query.size()-2]][query[query.size()-1]].begin();
+                        searchInLevel(it, query);
+                        numWords++;
+                    } else if (dic.lv2[query[query.size()-1]].size()) { // Se tiver palavras alocadas para a combinação no nível 2
+                        it = dic.lv2[query[query.size()-1]].begin();
+                        searchInLevel(it, query);
+                        numWords++;
+                    } else if(dic.lv1.size()) { // Se tiver palavras alocadas no nível 1
+                        searchInLevel(it, query);
+                        numWords++;
+                    }
+                    break;
+            }
+            newWords--;
+        }
+
+        for (int i = 3; i < query.size(); i++)
+            cout << query[i] << ' ';
+        cout << '\n';
+    } else {
+
+    }
 }
