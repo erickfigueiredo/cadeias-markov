@@ -10,6 +10,7 @@ REFERÊNCIAS:
 
 * Documentação da linguagem C++
 * Arquivo MyVec - Disponibilizado pelo professor
+* Arquivo MyMap - Disponibilizado pelo professor
 * Dúvidas perguntadas ao professor
 * Tabela ASCII: https://web.fe.up.pt/~ee96100/projecto/Tabela%20ascii.htm
 
