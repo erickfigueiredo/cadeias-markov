@@ -3,7 +3,7 @@
 *   
 *   Desenvolvido por Erick Figueiredo (@erickfigueiredo)
 *   Professor: Salles Vianna    Disc: Estrutura de Dados
-*   Data: 
+*   Data: 03/12/2020
 */
 
 #include <iostream>
@@ -407,6 +407,6 @@ void generate(MyVec<string> &query, Dictionary &dic) {
     for (int i = 3; i < query.size(); i++)  // Exibe o resultado
         if(query[i] != " ")
             cout << query[i] << ' ';
-            
+
     cout << "\n\n";
 }
