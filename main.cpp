@@ -101,10 +101,6 @@ int main(int argc, char *argv[]) {
         // Preenchemos o map com os dados obtidos
         populateDictionary(dic, text);
 
-        cout << dic.lv1.size() << endl;
-        cout << dic.lv2.size() << endl;
-        cout << dic.lv3.size() << endl;
-
         // Leitura dos comandos 
         while (getline(cin, sentence)) {
             query = formatQuery(sentence);
@@ -409,6 +405,8 @@ void generate(MyVec<string> &query, Dictionary &dic) {
     }    
 
     for (int i = 3; i < query.size(); i++)  // Exibe o resultado
-        cout << query[i] << ' ';
+        if(query[i] != " ")
+            cout << query[i] << ' ';
+            
     cout << "\n\n";
 }
