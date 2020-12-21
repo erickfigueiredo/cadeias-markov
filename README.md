@@ -1,14 +1,14 @@
 # Universidade Federal de Viçosa - (UFV)
 ### Estrutura de dados - Trabalho 3
 ---
-Cadeisa de Markov
+Cadeias de Markov
 
 EU LI AS REGRAS
 
 UNIVERSIDADE FEDERAL DE VIÇOSA
 
-ALUNO: Erick Lima Figueiredo    MA: 98898
-PROFESSOR: Salles Vianna        DISCIPLINA: Estrutura de Dados - INF 213
+ALUNO: Erick Lima Figueiredo    <br>MA: 98898<br>
+PROFESSOR: Salles Vianna<br>        DISCIPLINA: Estrutura de Dados - INF 213
 
 REFERÊNCIAS: 
 
